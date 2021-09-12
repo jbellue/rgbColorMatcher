@@ -156,8 +156,8 @@ int main(void) {
     initStartLed();
 
     while(1) {
-        leds[1].r = readADC(GREEN_POT);
-        leds[1].g = readADC(RED_POT);
+        leds[1].r = readADC(RED_POT);
+        leds[1].g = readADC(GREEN_POT);
         leds[1].b = readADC(BLUE_POT);
         _delay_ms(10);
 
