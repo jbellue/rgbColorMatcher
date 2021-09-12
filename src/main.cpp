@@ -41,10 +41,6 @@ rgb_color leds[LED_COUNT];
  *              └ ─ ─ ─ ┘
  */
 
-// extern "C" void output_grb(uint8_t * ptr, uint16_t count);
-// struct cRGB leds[2];
-// uint8_t leds[6];    // grb-grb
-
 /*
  * Initialise both the target led (and ignore values that are too dark)
  * and the user's led to black
