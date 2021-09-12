@@ -1,14 +1,9 @@
 #include <avr/io.h>
 #include <avr/eeprom.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 #include <stdlib.h>
-#include "ws2812_config.h"
-#include "light_ws2812.h"
-
-#define RED_POT   0b00000000
-#define GREEN_POT 0b00000001
-#define BLUE_POT  0b00000010
-#define DIFFICULTY_POT 0b00000011
+#include "strip_handler.h"
 
 
 //define the processor speed (if it's not already been defined by the compiler)
@@ -16,28 +11,39 @@
 	#define F_CPU 8000000UL
 #endif
 
+#define RED_POT   0b00000000
+#define GREEN_POT 0b00000001
+#define BLUE_POT  0b00000010
+#define DIFFICULTY_POT 0b00000011
+
+#define LED_COUNT 2
+rgb_color leds[LED_COUNT];
+
+
 #define MIN_RGB_LEVEL 50
 
 /*
-four potentionmeters:
-    ADC0: R
-    ADC1: G
-    ADC2: B
-    ADC3: difficulty (needed accuracy)
+ * four potentionmeters:
+ *     ADC0: R
+ *     ADC1: G
+ *     ADC2: B
+ *     ADC3: difficulty (needed accuracy)
+ *
+ * a strip of two neopixels
+ *     PWM
+ *
+ *
+ *              ┌ ─ ─ ─ ┐
+ *     ADC0  1  |°      |  8  VCC
+ *     ADC3  2  |       |  7  ADC1
+ *     ADC2  3  |       |  6  PB1 (as software reset?)
+ *     GND   4  |       |  5  PWM
+ *              └ ─ ─ ─ ┘
+ */
 
-a strip of two neopixels
-    PWM
-
-
-             ┌ ─ ─ ─ ┐
-    ADC0  1  |°      |  8  VCC
-    ADC3  2  |       |  7  ADC1
-    ADC2  3  |       |  6  PB1 (as software reset?)
-    GND   4  |       |  5  PWM
-             └ ─ ─ ─ ┘
-*/
-
-struct cRGB leds[2];
+// extern "C" void output_grb(uint8_t * ptr, uint16_t count);
+// struct cRGB leds[2];
+// uint8_t leds[6];    // grb-grb
 
 /*
  * Initialise both the target led (and ignore values that are too dark)
@@ -114,7 +120,7 @@ void showVictory() {
         leds[1].r = 0;
         leds[1].g = 0;
         leds[1].b = 0;
-        // ws2812_setleds(leds, 2);
+        led_strip_write(leds, LED_COUNT);
 
         _delay_ms(200);
 
@@ -124,7 +130,7 @@ void showVictory() {
         leds[1].r = 200;
         leds[1].g = 200;
         leds[1].b = 200;
-        // ws2812_setleds(leds, 2);
+        led_strip_write(leds, LED_COUNT);
 
         _delay_ms(200);
     }
@@ -154,8 +160,8 @@ int main(void) {
     initStartLed();
 
     while(1) {
-        leds[1].r = readADC(RED_POT);
-        leds[1].g = readADC(GREEN_POT);
+        leds[1].r = readADC(GREEN_POT);
+        leds[1].g = readADC(RED_POT);
         leds[1].b = readADC(BLUE_POT);
         _delay_ms(10);
 
@@ -164,5 +170,5 @@ int main(void) {
 }
 
 ISR(TIMER0_COMPA_vect) {
-    // ws2812_setleds(leds, 2);
+    led_strip_write(leds, LED_COUNT);
 }
