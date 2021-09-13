@@ -2,12 +2,14 @@
 #include <util/delay.h>
 
 void led_strip_write(rgb_color * colors, uint16_t count) {
+
     // Set the pin to be an output driving low.
     LED_STRIP_PORT &= ~(1<<LED_STRIP_PIN);
     LED_STRIP_DDR |= (1<<LED_STRIP_PIN);
 
     cli();   // Disable interrupts temporarily because we don't want our pulse timing to be messed up.
-    while (count--) {
+    while (count--)
+    {
         // Send a color to the LED strip.
         // The assembly below also increments the 'colors' pointer,
         // it will be pointing to the next color at the end of this loop.
@@ -39,12 +41,33 @@ void led_strip_write(rgb_color * colors, uint16_t count) {
             // high for some time.  The amount of time the line is high depends on whether the bit is 0 or 1,
             // but this function always takes the same time (2 us).
             "send_led_strip_bit%=:\n"
+#if F_CPU == 8000000
             "rol __tmp_reg__\n"                      // Rotate left through carry.
+#endif
             "sbi %2, %3\n"                           // Drive the line high.
+
+#if F_CPU != 8000000
+            "rol __tmp_reg__\n"                      // Rotate left through carry.
+#endif
+
+#if F_CPU == 16000000
+            "nop\n" "nop\n"
+#elif F_CPU == 20000000
+            "nop\n" "nop\n" "nop\n" "nop\n"
+#elif F_CPU != 8000000
+#error "Unsupported F_CPU"
+#endif
 
             "brcs .+2\n" "cbi %2, %3\n"              // If the bit to send is 0, drive the line low now.
 
+#if F_CPU == 8000000
             "nop\n" "nop\n"
+#elif F_CPU == 16000000
+            "nop\n" "nop\n" "nop\n" "nop\n" "nop\n"
+#elif F_CPU == 20000000
+            "nop\n" "nop\n" "nop\n" "nop\n" "nop\n"
+            "nop\n" "nop\n"
+#endif
 
             "brcc .+2\n" "cbi %2, %3\n"              // If the bit to send is 1, drive the line low now.
 
@@ -55,6 +78,9 @@ void led_strip_write(rgb_color * colors, uint16_t count) {
             "I" (_SFR_IO_ADDR(LED_STRIP_PORT)),   // %2 is the port register (e.g. PORTC)
             "I" (LED_STRIP_PIN)     // %3 is the pin number (0-8)
         );
+
+        // Uncomment the line below to temporarily enable interrupts between each color.
+        //sei(); asm volatile("nop\n"); cli();
     }
     sei();          // Re-enable interrupts now that we are done.
     _delay_us(80);  // Send the reset signal.
