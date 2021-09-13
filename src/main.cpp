@@ -1,19 +1,25 @@
 /*
  * three potentionmeters:
- *     ADC1: G
- *     ADC2: B
- *     ADC3: R
+ *      ADC1: G
+ *      ADC2: B
+ *      ADC3: R
  *
- * a strip of two WS2812b
- *     PWM
+ * a strip of two WS2812b:
+ *      PB0
  *
- *
- *              ┌ ─ ─ ─ ┐
- *     ADC0  1  |°      |  8  VCC
- *     ADC3  2  |       |  7  ADC1
- *     ADC2  3  |       |  6  PB1 (as software reset?)
- *     GND   4  |       |  5  PWM
- *              └ ─ ─ ─ ┘
+ * two push buttons:
+ *      RST-GND (for hardware reset)
+ *      PB1-GND (to select difficulty)
+ *                         ┌ ─ ─ ─ ┐
+ *   push button - RST  1  |°      |  8  VCC
+ *      Red pot - ADC3  2  |       |  7  ADC1 - Green pot
+ *     Blue pot - ADC2  3  |       |  6  PB1 - push button
+ *                 GND  4  |       |  5  PB0 - WS2812b
+ *                         └ ─ ─ ─ ┘
+ * 
+ * TODO:
+ *      - Add a difficulty selection on PB1. It could cycle through like 5 difficulty levels, and show them as a scale from green to red on the LEDs
+ *      - Program a better light show on victory
  */
 
 #include <avr/io.h>
