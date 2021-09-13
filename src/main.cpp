@@ -1,35 +1,10 @@
-#include <avr/io.h>
-#include <avr/eeprom.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include <stdlib.h>
-#include "strip_handler.h"
-
-
-//define the processor speed (if it's not already been defined by the compiler)
-#ifndef F_CPU
-	#define F_CPU 8000000UL
-#endif
-
-#define RED_POT   0b00000000
-#define GREEN_POT 0b00000001
-#define BLUE_POT  0b00000010
-#define DIFFICULTY_POT 0b00000011
-
-#define LED_COUNT 2
-rgb_color leds[LED_COUNT];
-
-
-#define MIN_RGB_LEVEL 50
-
 /*
- * four potentionmeters:
- *     ADC0: R
+ * three potentionmeters:
  *     ADC1: G
  *     ADC2: B
- *     ADC3: difficulty (needed accuracy)
+ *     ADC3: R
  *
- * a strip of two neopixels
+ * a strip of two WS2812b
  *     PWM
  *
  *
@@ -40,6 +15,26 @@ rgb_color leds[LED_COUNT];
  *     GND   4  |       |  5  PWM
  *              └ ─ ─ ─ ┘
  */
+
+#include <avr/io.h>
+#include <avr/eeprom.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdlib.h>
+#include "strip_handler.h"
+
+
+#define F_CPU 8000000UL
+
+#define GREEN_POT 0b00000001
+#define BLUE_POT  0b00000010
+#define RED_POT 0b00000011
+
+#define DIFFICULTY 20
+#define LED_COUNT 2
+rgb_color leds[LED_COUNT];
+#define MIN_RGB_LEVEL 50
+
 
 /*
  * Initialise both the target led (and ignore values that are too dark)
@@ -63,46 +58,53 @@ void initStartLed() {
  * Use a variable stored in EEPROM to ensure the random color
  * sequence changes from one game to the next.
  */
-void initRand()
-{
+void initRand() {
 	uint8_t current_seed = eeprom_read_word(0);
 	srand(++current_seed);              // increment and use value as seed
 	eeprom_write_word(0, current_seed); //store the new seed for next time
 }
 
-/*
- * We don't care about 10-bits precision, so only use 8 bits. That'll also
- * make reading the values simpler.
- */
 void initADC() {
-    ADMUX = (1 << ADLAR) |  // left shift result for 8-bit values
-            (1 << REFS0);   // use VCC as reference
+    ADMUX =
+        (1 << ADLAR) |    // left shift result
+        (0 << REFS1) |    // Sets ref. voltage to VCC, bit 1
+        (0 << REFS0);     // Sets ref. voltage to VCC, bit 0
 
-    ADCSRA =(1 << ADEN)  |  // enable ADC
-            (1 << ADPS1) |  // set ADC clock to 125khz (division factor 8)
-            (1 << ADPS0);   // set ADC clock to 125khz (division factor 8)
+    ADCSRA =
+        (1 << ADEN)  |    // Enable ADC 
+        (1 << ADPS2) |    // set prescaler to 64, bit 2
+        (1 << ADPS1) |    // set prescaler to 64, bit 1
+        (0 << ADPS0);     // set prescaler to 64, bit 0
+
+    DIDR0 = (1 << ADC2D);     // disable digital input on analog input channel to conserve power 
+
 }
 
 /*
  * Use timer0 to update the user's LED.
  */
 void initTimer() {
-    // set up Timer 0
-    TCCR0A = (1 << WGM01) | // CTC mode
-            (1 << COM0A0);  // Toggle OC0A on Compare Match
+    cli();                  // stop interrupts
+    TCNT0 = 0;              // initialize counter value to 0
+
+    OCR0A = 129;            // Should give 8000000 / 1024 / (129+1) = 60Hz
+
+    TCCR0A = (1 << WGM01);  // set CTC mode
+
     TCCR0B = (1 << CS00) |
-            (1 << CS02);    // 1024 prescaler
-    OCR0A = 128;            // Should give 8000000 / 1024 / 128 = 61Hz
+             (1 << CS02);   // 1024 prescaler
+
+    TIMSK |= (1 << OCIE0A); // Output Compare Match A Interrupt Enable
 
     sei();                  // enable interrupts
 }
 
-uint8_t readADC(uint8_t channel) {
-    ADMUX &= 11111000;              // clear the previous channel selected
+uint8_t readADC(const uint8_t channel) {
+    ADMUX &= 0xF0;                 // clear the previous channel selected
     ADMUX |= channel;
 
-    while(!(ADCSRA & (1 << ADIF))); // wait for conversion to finish
-    ADCSRA |= (1 << ADSC);          // start the conversion
+    ADCSRA |= (1 << ADSC);         // start ADC measurement
+    while (ADCSRA & (1 << ADSC) ); // wait till conversion complete
     return ADCH;
 }
 
@@ -161,8 +163,10 @@ int main(void) {
         leds[1].b = readADC(BLUE_POT);
         _delay_ms(10);
 
-        compareLedValues(readADC(DIFFICULTY_POT));
+        compareLedValues(DIFFICULTY);
     }
+
+    return 0;
 }
 
 ISR(TIMER0_COMPA_vect) {
