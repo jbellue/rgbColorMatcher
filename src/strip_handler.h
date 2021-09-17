@@ -1,3 +1,5 @@
+// Based on https://github.com/pololu/pololu-led-strip-avr
+
 #ifndef STRIP_HANDLER_H
 #define STRIP_HANDLER_H
 

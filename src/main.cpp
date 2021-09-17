@@ -1,4 +1,5 @@
 /*
+ * Based on https://github.com/paulboardman/avr/tree/master/rgb_color_matcher
  * three potentionmeters:
  *      ADC1: G
  *      ADC2: B

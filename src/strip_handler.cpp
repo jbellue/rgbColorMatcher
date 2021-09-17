@@ -1,3 +1,4 @@
+// Based on https://github.com/pololu/pololu-led-strip-avr
 #include "strip_handler.h"
 #include <util/delay.h>
 
