@@ -29,6 +29,9 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include "strip_handler.h"
+extern "C" {
+    #include "debounce.h"
+}
 
 
 #define F_CPU 8000000UL
@@ -42,6 +45,10 @@
 rgb_color leds[LED_COUNT];
 #define MIN_RGB_LEVEL 50
 
+#define DIFFICULTY_STEP 15
+#define DEFAULT_DIFFICULTY 30
+
+uint8_t difficulty = DEFAULT_DIFFICULTY;
 
 /*
  * Initialise both the target led (and ignore values that are too dark)
@@ -146,7 +153,7 @@ void restartFromScratch() {
     initStartLed();
 }
 
-void compareLedValues(uint8_t difficulty) {
+void compareLedValues() {
     if (abs(leds[0].r - leds[1].r) > difficulty ||
         abs(leds[0].g - leds[1].g) > difficulty ||
         abs(leds[0].b - leds[1].b) > difficulty) {
@@ -158,11 +165,17 @@ void compareLedValues(uint8_t difficulty) {
     restartFromScratch();
 }
 
+void initButtonInput() {
+    DDRB &= ~(1 << PB1);    // Set PB1 as a digital input pin
+    PORTB |= (1 << PB1);    // Enable its pull-up resistor
+}
+
 int main(void) {
     initADC();
     initTimer();
     initRand();
     initStartLed();
+    initButtonInput();
 
     while(1) {
         leds[1].r = readADC(RED_POT);
@@ -170,7 +183,7 @@ int main(void) {
         leds[1].b = readADC(BLUE_POT);
         _delay_ms(10);
 
-        compareLedValues(DIFFICULTY);
+        compareLedValues();
     }
 
     return 0;
@@ -178,4 +191,10 @@ int main(void) {
 
 ISR(TIMER0_COMPA_vect) {
     led_strip_write(leds, LED_COUNT);
+    if (debounce(PB1)) {
+        difficulty += DIFFICULTY_STEP;
+        if (difficulty > 65) {
+            difficulty = 5;
+        }
+    }
 }
