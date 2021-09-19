@@ -36,9 +36,9 @@ extern "C" {
 
 #define F_CPU 8000000UL
 
-#define GREEN_POT 0b00000001
-#define BLUE_POT  0b00000010
-#define RED_POT   0b00000011
+#define GREEN_POT_MUX 0b00000001
+#define BLUE_POT_MUX  0b00000010
+#define RED_POT_MUX   0b00000011
 
 #define DIFFICULTY 20
 #define LED_COUNT 2
@@ -77,7 +77,7 @@ void initStartLed() {
         totalLight = leds[0].r + leds[0].g + leds[0].b;
     }
     leds[1] = BLACK;
-    leds[2] = leds[0];
+    leds[2] = leds[0];  // store leds[0] so we can restore it after showing difficulty
 }
 
 /*
@@ -200,10 +200,11 @@ int main(void) {
     initButtonInput();
 
     while(1) {
+        // only update user's LED from pots if we're not showing the difficulty
         if (!showingDifficultyFlag) {
-            leds[1].r = readADC(RED_POT);
-            leds[1].g = readADC(GREEN_POT);
-            leds[1].b = readADC(BLUE_POT);
+            leds[1].r = readADC(RED_POT_MUX);
+            leds[1].g = readADC(GREEN_POT_MUX);
+            leds[1].b = readADC(BLUE_POT_MUX);
 
             compareLedValues();
         }
@@ -236,8 +237,8 @@ ISR(TIMER0_COMPA_vect) {
 
 ISR(TIMER1_COMPA_vect) {
     if (++difficultyLedCounter >= 10) {
-        leds[0] = leds[2];
-        TCCR1 = 0;  //disable timer1
+        leds[0] = leds[2];          // restore goal led from buffer
+        TCCR1 = 0;                  // disable timer1
         difficultyLedCounter = 0;
         showingDifficultyFlag = 0;
     }
