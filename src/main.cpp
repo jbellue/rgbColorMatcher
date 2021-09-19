@@ -19,7 +19,8 @@
  *                         └ ─ ─ ─ ┘
  *
  * TODO:
- *  - Get better difficulty colors
+ *  - Store difficulty index in EEPROM
+ *  - Tweak difficulty
  */
 
 #include <avr/io.h>
@@ -53,11 +54,11 @@ static volatile uint8_t difficultyLedCounter = 0;
 uint8_t difficultyIndex = 2;
 uint8_t difficulty[] = {65, 51, 37, 23, 10};
 rgb_color difficultyColor[] = {
-    {0,   200, 0},
-    {138, 201, 0},
-    {200, 200, 0},
-    {211, 124, 0},
-    {200, 0,   0},
+    {0,   200, 200},
+    {0,   200, 0  },
+    {200, 100, 0  },
+    {200, 0,   0  },
+    {200, 0,   200}
 };
 
 /*
