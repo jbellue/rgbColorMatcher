@@ -19,7 +19,7 @@
  *                         └ ─ ─ ─ ┘
  *
  * TODO:
- *
+ *  - Get better difficulty colors
  */
 
 #include <avr/io.h>
