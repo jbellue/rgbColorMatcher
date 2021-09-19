@@ -17,10 +17,9 @@
  *     Blue pot - ADC2  3  |       |  6  PB1 - push button
  *                 GND  4  |       |  5  PB0 - WS2812b
  *                         └ ─ ─ ─ ┘
- * 
+ *
  * TODO:
- *      - Add a difficulty selection on PB1. It could cycle through like 5 difficulty levels, and show them as a scale from green to red on the LEDs
- *      - Program a better light show on victory
+ *
  */
 
 #include <avr/io.h>
@@ -43,8 +42,6 @@ extern "C" {
 #define DIFFICULTY 20
 #define LED_COUNT 2
 rgb_color leds[LED_COUNT + 1]; // +1 to store the goal color
-#define BLACK {0, 0, 0}
-#define WHITE {200, 200, 200}
 
 #define MIN_RGB_LEVEL 50
 
@@ -76,8 +73,8 @@ void initStartLed() {
         leds[0].b = (uint8_t)(rand() >> 7);
         totalLight = leds[0].r + leds[0].g + leds[0].b;
     }
-    leds[1] = BLACK;
-    leds[2] = leds[0];  // store leds[0] so we can restore it after showing difficulty
+    leds[1] = {0, 0, 0};    // black
+    leds[2] = leds[0];      // store leds[0] so we can restore it after showing difficulty
 }
 
 /*
@@ -137,18 +134,17 @@ uint8_t readADC(const uint8_t channel) {
 void showVictory() {
     cli();  // prevent interrupt from ruining the light show
 
-    for(uint8_t i = 0; i < 5 ; ++i) {
-        leds[0] = BLACK;
-        leds[1] = BLACK;
+    uint8_t r, g, b;
+    for(uint8_t i = 0; i < 100 ; ++i) {
+        float frequency = 0.3 * i;
+        r = sin(frequency    ) * 127 + 128;
+        g = sin(frequency + 2) * 127 + 128;
+        b = sin(frequency + 4) * 127 + 128;
+        leds[0] = {r, g, b};
+        leds[1] = {r, g, b};
         led_strip_write(leds, LED_COUNT);
 
-        _delay_ms(200);
-
-        leds[0] = WHITE;
-        leds[1] = WHITE;
-        led_strip_write(leds, LED_COUNT);
-
-        _delay_ms(200);
+        _delay_ms(20);
     }
     sei();  // restore interrupts
 }
