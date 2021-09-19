@@ -38,11 +38,13 @@ extern "C" {
 
 #define GREEN_POT 0b00000001
 #define BLUE_POT  0b00000010
-#define RED_POT 0b00000011
+#define RED_POT   0b00000011
 
 #define DIFFICULTY 20
 #define LED_COUNT 2
-rgb_color leds[LED_COUNT];
+#define BLACK {0, 0, 0}
+#define WHITE {200, 200, 200}
+
 #define MIN_RGB_LEVEL 50
 
 #define DIFFICULTY_STEP 15
@@ -63,9 +65,7 @@ void initStartLed() {
         leds[0].b = (uint8_t)(rand() >> 7);
         totalLight = leds[0].r + leds[0].g + leds[0].b;
     }
-    leds[1].r = 0;
-    leds[1].g = 0;
-    leds[1].b = 0;
+    leds[1] = BLACK;
 }
 
 /*
@@ -126,22 +126,14 @@ void showVictory() {
     cli();  // prevent interrupt from ruining the light show
 
     for(uint8_t i = 0; i < 5 ; ++i) {
-        leds[0].r = 0;
-        leds[0].g = 0;
-        leds[0].b = 0;
-        leds[1].r = 0;
-        leds[1].g = 0;
-        leds[1].b = 0;
+        leds[0] = BLACK;
+        leds[1] = BLACK;
         led_strip_write(leds, LED_COUNT);
 
         _delay_ms(200);
 
-        leds[0].r = 200;
-        leds[0].g = 200;
-        leds[0].b = 200;
-        leds[1].r = 200;
-        leds[1].g = 200;
-        leds[1].b = 200;
+        leds[0] = WHITE;
+        leds[1] = WHITE;
         led_strip_write(leds, LED_COUNT);
 
         _delay_ms(200);
