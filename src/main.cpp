@@ -47,8 +47,7 @@ extern "C" {
 
 #define MIN_RGB_LEVEL 50
 
-#define DIFFICULTY_STEP 15
-#define DEFAULT_DIFFICULTY 30
+static volatile uint8_t updateLEDstripFlag = 0;
 
 uint8_t difficulty = DEFAULT_DIFFICULTY;
 
@@ -173,7 +172,11 @@ int main(void) {
         leds[1].r = readADC(RED_POT);
         leds[1].g = readADC(GREEN_POT);
         leds[1].b = readADC(BLUE_POT);
-        _delay_ms(10);
+
+        if (updateLEDstripFlag) {
+            led_strip_write(leds, LED_COUNT);
+            updateLEDstripFlag = 0;
+        }
 
         compareLedValues();
     }
@@ -182,7 +185,7 @@ int main(void) {
 }
 
 ISR(TIMER0_COMPA_vect) {
-    led_strip_write(leds, LED_COUNT);
+    updateLEDstripFlag = 1;
     if (debounce(PB1)) {
         difficulty += DIFFICULTY_STEP;
         if (difficulty > 65) {
