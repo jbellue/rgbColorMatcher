@@ -138,9 +138,9 @@ void showVictory() {
     uint8_t r, g, b;
     for(uint8_t i = 0; i < 100 ; ++i) {
         float frequency = 0.3 * i;
-        r = sin(frequency    ) * 127 + 128;
-        g = sin(frequency + 2) * 127 + 128;
-        b = sin(frequency + 4) * 127 + 128;
+        r = (sin(frequency    ) + 1) * 128;
+        g = (sin(frequency + 2) + 1) * 128;
+        b = (sin(frequency + 4) + 1) * 128;
         leds[0] = {r, g, b};
         leds[1] = {r, g, b};
         led_strip_write(leds, LED_COUNT);
