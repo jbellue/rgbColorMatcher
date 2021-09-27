@@ -11,15 +11,14 @@
  * two push buttons:
  *      RST-GND (for hardware reset)
  *      PB1-GND (to select difficulty)
- *                         ┌ ─ ─ ─ ┐
- *   push button - RST  1  |°      |  8  VCC
- *      Red pot - ADC3  2  |       |  7  ADC1 - Green pot
- *     Blue pot - ADC2  3  |       |  6  PB1 - push button
- *                 GND  4  |       |  5  PB0 - WS2812b
- *                         └ ─ ─ ─ ┘
+ *                              ┌ ─ ─ ─ ┐
+ *   Diffficulty pot - ADC0  1  |°      |  8  VCC
+ *           Red pot - ADC3  2  |       |  7  ADC1 - Green pot
+ *          Blue pot - ADC2  3  |       |  6  PB1 - difficulty push button
+ *                      GND  4  |       |  5  PB0 - WS2812b
+ *                              └ ─ ─ ─ ┘
  *
  * TODO:
- *  - Store difficulty index in EEPROM
  *  - Tweak difficulty
  */
 
@@ -33,33 +32,21 @@ extern "C" {
     #include "debounce.h"
 }
 
-
 #define F_CPU 8000000UL
 
-#define GREEN_POT_MUX 0b00000001
-#define BLUE_POT_MUX  0b00000010
-#define RED_POT_MUX   0b00000011
+#define DIFFICULTY_POT_MUX  0b00000000
+#define GREEN_POT_MUX       0b00000001
+#define BLUE_POT_MUX        0b00000010
+#define RED_POT_MUX         0b00000011
 
-#define DIFFICULTY 20
+#define MIN_DIFFICULTY  85
+#define MAX_DIFFICULTY  5
 #define LED_COUNT 2
-rgb_color leds[LED_COUNT + 1]; // +1 to store the goal color
+rgb_color leds[LED_COUNT];
 
 #define MIN_RGB_LEVEL 50
 
-static volatile uint8_t showingDifficultyFlag = 0;
 static volatile uint8_t updateLEDstripFlag = 0;
-static volatile uint8_t updateDifficultyFlag = 0;
-static volatile uint8_t difficultyLedCounter = 0;
-
-uint8_t difficultyIndex = 2;
-uint8_t difficulty[] = {65, 51, 37, 23, 10};
-rgb_color difficultyColor[] = {
-    {0,   200, 200},
-    {0,   200, 0  },
-    {200, 100, 0  },
-    {200, 0,   0  },
-    {200, 0,   200}
-};
 
 /*
  * Initialise both the target led (and ignore values that are too dark)
@@ -75,7 +62,6 @@ void initStartLed() {
         totalLight = leds[0].r + leds[0].g + leds[0].b;
     }
     leds[1] = {0, 0, 0};    // black
-    leds[2] = leds[0];      // store leds[0] so we can restore it after showing difficulty
 }
 
 /*
@@ -154,10 +140,10 @@ void restartFromScratch() {
     initStartLed();
 }
 
-void compareLedValues() {
-    if (abs(leds[0].r - leds[1].r) > difficulty[difficultyIndex] ||
-        abs(leds[0].g - leds[1].g) > difficulty[difficultyIndex] ||
-        abs(leds[0].b - leds[1].b) > difficulty[difficultyIndex]) {
+void compareLedValues(const uint8_t difficulty) {
+    if (abs(leds[0].r - leds[1].r) > difficulty ||
+        abs(leds[0].g - leds[1].g) > difficulty ||
+        abs(leds[0].b - leds[1].b) > difficulty) {
         // loose, better luck next loop
         return;
     }
@@ -171,22 +157,14 @@ void initButtonInput() {
     PORTB |= (1 << PB1);    // Enable its pull-up resistor
 }
 
-void startLedDifficultyTimer() {
-    cli();
-    TCNT1 = 0;              // initialize counter value to 0
+uint8_t map(const uint8_t x, const uint8_t in_min, const uint8_t in_max, const uint8_t out_min, const uint8_t out_max) {
+    if (x <= out_min) return out_min;
+    if (x >= out_max) return out_max;
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
-    OCR1C = 194;            // Should give 8000000 / 4096 / (194 + 1) = 10Hz
-    OCR1A = OCR1C;          // interrupt COMPA
-
-    TCCR1 = (1 << CTC1) |   // CTC
-            (1 << CS13) |   // Prescaler 4096
-            (1 << CS12) |   // Prescaler 4096
-            (1 << CS10);    // Prescaler 4096
-
-    TIMSK |= (1 << OCIE1A); // Output Compare Match A Interrupt Enable
-
-    difficultyLedCounter = 0;
-    sei();
+uint8_t setDifficultyFromADCValue(const uint8_t ADCvalue) {
+    return map(ADCvalue, 120, 255, MAX_DIFFICULTY, MIN_DIFFICULTY);
 }
 
 int main(void) {
@@ -197,28 +175,15 @@ int main(void) {
     initButtonInput();
 
     while(1) {
-        // only update user's LED from pots if we're not showing the difficulty
-        if (!showingDifficultyFlag) {
-            leds[1].r = readADC(RED_POT_MUX);
-            leds[1].g = readADC(GREEN_POT_MUX);
-            leds[1].b = readADC(BLUE_POT_MUX);
+        leds[1].r = readADC(RED_POT_MUX);
+        leds[1].g = readADC(GREEN_POT_MUX);
+        leds[1].b = readADC(BLUE_POT_MUX);
 
-            compareLedValues();
-        }
+        compareLedValues(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
 
         if (updateLEDstripFlag) {
             led_strip_write(leds, LED_COUNT);
             updateLEDstripFlag = 0;
-        }
-        if (updateDifficultyFlag) {
-            if (++difficultyIndex >= sizeof(difficulty)) {
-                difficultyIndex = 0;
-            }
-            updateDifficultyFlag = 0;
-            showingDifficultyFlag = 1;
-            leds[0] = difficultyColor[difficultyIndex];
-            leds[1] = difficultyColor[difficultyIndex];
-            startLedDifficultyTimer();
         }
     }
 
@@ -228,15 +193,6 @@ int main(void) {
 ISR(TIMER0_COMPA_vect) {
     updateLEDstripFlag = 1;
     if (debounce(PB1)) {
-        updateDifficultyFlag = 1;
-    }
-}
-
-ISR(TIMER1_COMPA_vect) {
-    if (++difficultyLedCounter >= 10) {
-        leds[0] = leds[2];          // restore goal led from buffer
-        TCCR1 = 0;                  // disable timer1
-        difficultyLedCounter = 0;
-        showingDifficultyFlag = 0;
+        restartFromScratch();
     }
 }
