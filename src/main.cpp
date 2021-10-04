@@ -1,6 +1,7 @@
 /*
  * Based on https://github.com/paulboardman/avr/tree/master/rgb_color_matcher
- * three potentionmeters:
+ * Four potentionmeters:
+ *      ADC0: Difficulty
  *      ADC1: G
  *      ADC2: B
  *      ADC3: R
@@ -8,13 +9,12 @@
  * a strip of two WS2812b:
  *      PB0
  *
- * two push buttons:
- *      RST-GND (for hardware reset)
- *      PB1-GND (to select difficulty)
+ * a push button:
+ *      PB1-GND: software reset
  *                              ┌ ─ ─ ─ ┐
  *   Diffficulty pot - ADC0  1  |°      |  8  VCC
  *           Red pot - ADC3  2  |       |  7  ADC1 - Green pot
- *          Blue pot - ADC2  3  |       |  6  PB1 - difficulty push button
+ *          Blue pot - ADC2  3  |       |  6  PB1 - Software reset
  *                      GND  4  |       |  5  PB0 - WS2812b
  *                              └ ─ ─ ─ ┘
  *
