@@ -54,7 +54,7 @@ static volatile uint8_t updateLEDstripFlag = 0;
  * and the user's led to black
  */
 void initStartLed() {
-    uint8_t totalLight;
+    uint8_t totalLight = 0;
     while (totalLight < MIN_RGB_LEVEL) {
         // shift 7 bits to the right to divide by 128 and get a value 0-255
         leds[0].r = (uint8_t)(rand() >> 7);
