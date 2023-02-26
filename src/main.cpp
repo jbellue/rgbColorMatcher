@@ -1,22 +1,22 @@
 /*
  * Based on https://github.com/paulboardman/avr/tree/master/rgb_color_matcher
  * Four potentionmeters:
- *      ADC0: Difficulty
- *      ADC1: G
- *      ADC2: B
- *      ADC3: R
+ *      ADC0: Difficulty - 10kΩ, with detents
+ *      ADC1: G          - 10kΩ
+ *      ADC2: B          - 10kΩ
+ *      ADC3: R          - 10kΩ
  *
  * a strip of two WS2812b:
  *      PB0
  *
  * a push button:
  *      PB1-GND: software reset
- *                              ┌ ─ ─ ─ ┐
- *   Diffficulty pot - ADC0  1  |°      |  8  VCC
- *           Red pot - ADC3  2  |       |  7  ADC1 - Green pot
- *          Blue pot - ADC2  3  |       |  6  PB1 - Software reset
- *                      GND  4  |       |  5  PB0 - WS2812b
- *                              └ ─ ─ ─ ┘
+ *                              ┌───────┐
+ *   Diffficulty pot - ADC0  1 ─┤°      ├─ 8  VCC
+ *           Red pot - ADC3  2 ─┤       ├─ 7  ADC1 - Green pot
+ *          Blue pot - ADC2  3 ─┤       ├─ 6  PB1 - Software reset
+ *                      GND  4 ─┤       ├─ 5  PB0 - WS2812b
+ *                              └───────┘
  *
  * TODO:
  *  - Tweak code for RSTDSBL
