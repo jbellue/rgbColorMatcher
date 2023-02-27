@@ -29,11 +29,7 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include "strip_handler.h"
-extern "C" {
-    #include "debounce.h"
-}
-
-#define F_CPU 8000000UL
+#include "debounce.h"
 
 #define DIFFICULTY_POT_MUX  0b00000000
 #define GREEN_POT_MUX       0b00000001
@@ -62,7 +58,7 @@ void initStartLed() {
         leds[0].b = (uint8_t)(rand() >> 7);
         totalLight = leds[0].r + leds[0].g + leds[0].b;
     }
-    leds[1] = {0, 0, 0};    // black
+    leds[1] = (rgb_color) {.r=0, .g=0, .b=0};    // black
 }
 
 /*
@@ -128,8 +124,8 @@ void showVictory() {
         r = (sin(frequency    ) + 1) * 128;
         g = (sin(frequency + 2) + 1) * 128;
         b = (sin(frequency + 4) + 1) * 128;
-        leds[0] = {r, g, b};
-        leds[1] = {r, g, b};
+        leds[0] = (rgb_color) {.r=r, .g=g, .b=b};
+        leds[1] = (rgb_color) {.r=r, .g=g, .b=b};
         led_strip_write(leds, LED_COUNT);
 
         _delay_ms(20);
