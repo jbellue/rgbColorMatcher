@@ -119,12 +119,11 @@ uint8_t readADC(const uint8_t channel) {
 void showVictory() {
     cli();  // prevent interrupt from ruining the light show
 
-    uint8_t r, g, b;
     for(uint8_t i = 0; i < 100 ; ++i) {
         float frequency = 0.3 * i;
-        r = (sin(frequency    ) + 1) * 128;
-        g = (sin(frequency + 2) + 1) * 128;
-        b = (sin(frequency + 4) + 1) * 128;
+        uint8_t r = (sin(frequency    ) + 1) * 128;
+        uint8_t g = (sin(frequency + 2) + 1) * 128;
+        uint8_t b = (sin(frequency + 4) + 1) * 128;
         leds[0] = (rgb_color) {.r=r, .g=g, .b=b};
         leds[1] = (rgb_color) {.r=r, .g=g, .b=b};
         led_strip_write(leds, LED_COUNT);
