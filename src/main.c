@@ -141,7 +141,7 @@ void compareLedValues(const uint8_t difficulty) {
     if (abs(leds[0].r - leds[1].r) > difficulty ||
         abs(leds[0].g - leds[1].g) > difficulty ||
         abs(leds[0].b - leds[1].b) > difficulty) {
-        // loose, better luck next loop
+        // lose, better luck next loop
         return;
     }
 
