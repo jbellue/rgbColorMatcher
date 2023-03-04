@@ -44,6 +44,7 @@ rgb_color leds[LED_COUNT];
 #define MIN_RGB_LEVEL 50
 
 static volatile uint8_t updateLEDstripFlag = 0;
+static volatile uint8_t restartFromScratchFlag = 0;
 
 /*
  * Initialise both the target led (and ignore values that are too dark)
@@ -182,6 +183,10 @@ int main(void) {
             led_strip_write(leds, LED_COUNT);
             updateLEDstripFlag = 0;
         }
+        if(restartFromScratchFlag) {
+            restartFromScratch();
+            restartFromScratchFlag = 0;
+        }
     }
 
     return 0;
@@ -189,7 +194,7 @@ int main(void) {
 
 ISR(TIMER0_COMPA_vect) {
     updateLEDstripFlag = 1;
-    if (debounce(PB1)) {
-        restartFromScratch();
+    if (!(PINB & (1 << PB1))) {
+        restartFromScratchFlag = 1;
     }
 }
