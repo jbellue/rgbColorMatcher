@@ -26,10 +26,11 @@
 #include <avr/io.h>
 #include <avr/eeprom.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
+#include <avr/wdt.h>
 #include <util/delay.h>
 #include <stdlib.h>
 #include "strip_handler.h"
-#include "debounce.h"
 
 #define DIFFICULTY_POT_MUX  0b00000000
 #define GREEN_POT_MUX       0b00000001
@@ -43,8 +44,39 @@ rgb_color leds[LED_COUNT];
 
 #define MIN_RGB_LEVEL 50
 
+#define SHORT_PRESS_DURATION 6  // 0.1 second
+#define LONG_PRESS_DURATION 120 // 2 seconds
+volatile uint16_t timer;        // milliseconds counter
+
 static volatile uint8_t updateLEDstripFlag = 0;
 static volatile uint8_t restartFromScratchFlag = 0;
+
+typedef enum {
+    POWER_OFF,
+    RUNNING
+} Status;
+typedef enum  {
+    BTN_UP,
+    BTN_DOWN,
+    BTN_IGNORE
+} ButtonStatus;
+ButtonStatus buttonStatus;
+
+void powerOff() {
+    cli();                               // disable interrupts
+    wdt_disable();                       // disable watchdog
+    ADCSRA &= ~(1 << ADEN);              // disable ADC
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+    sleep_bod_disable();                  // disable brown out detector
+    sei();                                // re-enable interrupts
+    sleep_cpu();
+
+    // asleep here until interrupt trigger
+
+    sleep_disable();
+    ADCSRA |= (1 << ADEN);                // enable ADC
+}
 
 /*
  * Initialise both the target led (and ignore values that are too dark)
@@ -152,6 +184,8 @@ void compareLedValues(const uint8_t difficulty) {
 void initButtonInput() {
     DDRB &= ~(1 << PB1);    // Set PB1 as a digital input pin
     PORTB |= (1 << PB1);    // Enable its pull-up resistor
+    GIMSK |= (1 << PCIE);   // Enable Pin Change Interrupts
+    PCMSK |= (1 << PB1);    // Use PCINTn as interrupt pin (Button I/O pin)
 }
 
 uint8_t map(const uint8_t x, const uint8_t in_min, const uint8_t in_max, const uint8_t out_min, const uint8_t out_max) {
@@ -171,29 +205,70 @@ int main(void) {
     initStartLed();
     initButtonInput();
 
+    Status status = RUNNING;
+    buttonStatus = BTN_UP;
+
     while(1) {
-        leds[1].r = readADC(RED_POT_MUX);
-        leds[1].g = readADC(GREEN_POT_MUX);
-        leds[1].b = readADC(BLUE_POT_MUX);
-
-        compareLedValues(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
-
-        if (updateLEDstripFlag) {
-            led_strip_write(leds, LED_COUNT);
-            updateLEDstripFlag = 0;
+        if(buttonStatus == BTN_DOWN) {
+            if(timer > LONG_PRESS_DURATION) {
+                if(status == RUNNING) { 
+                    status = POWER_OFF;
+                }
+                else {
+                    status = RUNNING;
+                    initADC();
+                    initTimer();
+                    initRand();
+                    initStartLed();
+                    initButtonInput();
+                }
+                buttonStatus = BTN_IGNORE;
+            }
+            else if(timer > SHORT_PRESS_DURATION) {
+                restartFromScratch();
+            }
         }
-        if(restartFromScratchFlag) {
-            restartFromScratch();
-            restartFromScratchFlag = 0;
+        else {
+            if (status == RUNNING) {
+                leds[1].r = readADC(RED_POT_MUX);
+                leds[1].g = readADC(GREEN_POT_MUX);
+                leds[1].b = readADC(BLUE_POT_MUX);
+
+                compareLedValues(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
+
+                if (updateLEDstripFlag) {
+                    led_strip_write(leds, LED_COUNT);
+                    updateLEDstripFlag = 0;
+                }
+                PORTB |= (1 << PB1);
+            }
+            else
+            {
+                PORTB &= ~(1 << PB1); // Pin 0 OFF
+                leds[0] = (rgb_color) { .r = 0, .g = 0, .b = 0 };
+                leds[1] = (rgb_color) { .r = 0, .g = 0, .b = 0 };
+                led_strip_write(leds, LED_COUNT);
+                powerOff();
+            }
         }
     }
-
     return 0;
+}
+
+ISR(PCINT0_vect) {
+    if (!((PINB >> PB1) & 0x01)) { // Check if button is down
+        buttonStatus = BTN_DOWN;
+        TIMSK |= (1 << OCIE0A);    // reinitialise the timer
+        timer = 0;
+    }
+    else {
+        buttonStatus = BTN_UP;
+    }
 }
 
 ISR(TIMER0_COMPA_vect) {
     updateLEDstripFlag = 1;
-    if (!(PINB & (1 << PB1))) {
-        restartFromScratchFlag = 1;
-    }
+    timer++;
 }
+
+EMPTY_INTERRUPT(INT0_vect);
