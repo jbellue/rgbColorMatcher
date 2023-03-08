@@ -31,14 +31,18 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include "strip_handler.h"
+#include "rgb_color.h"
+#include "color_conversion.h"
+#include <stdbool.h>
+#include <math.h>
 
 #define DIFFICULTY_POT_MUX  0b00000000
 #define GREEN_POT_MUX       0b00000001
 #define BLUE_POT_MUX        0b00000010
 #define RED_POT_MUX         0b00000011
 
-#define MIN_DIFFICULTY  85
-#define MAX_DIFFICULTY  5
+#define MIN_DIFFICULTY  20
+#define MAX_DIFFICULTY  2
 #define LED_COUNT 2
 rgb_color leds[LED_COUNT];
 
@@ -169,10 +173,14 @@ void restartFromScratch() {
     initStartLed();
 }
 
-void compareLedValues(const uint8_t difficulty) {
-    if (abs(leds[0].r - leds[1].r) > difficulty ||
-        abs(leds[0].g - leds[1].g) > difficulty ||
-        abs(leds[0].b - leds[1].b) > difficulty) {
+bool areLedsDifferent(const uint8_t difficulty) {
+    const float colorDelta = colorDistance(leds[0], leds[1]);
+
+    return abs(colorDelta) > difficulty;
+}
+
+void checkForVictory(const uint8_t difficulty) {
+    if (areLedsDifferent(difficulty)) {
         // lose, better luck next loop
         return;
     }
@@ -234,7 +242,7 @@ int main(void) {
                 leds[1].g = readADC(GREEN_POT_MUX);
                 leds[1].b = readADC(BLUE_POT_MUX);
 
-                compareLedValues(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
+        checkForVictory(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
 
                 if (updateLEDstripFlag) {
                     led_strip_write(leds, LED_COUNT);
