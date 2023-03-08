@@ -28,13 +28,14 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
-#include <util/delay.h>
+#include <math.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <util/delay.h>
+
 #include "strip_handler.h"
 #include "rgb_color.h"
 #include "color_conversion.h"
-#include <stdbool.h>
-#include <math.h>
 
 #define DIFFICULTY_POT_MUX  0b00000000
 #define GREEN_POT_MUX       0b00000001
@@ -242,7 +243,7 @@ int main(void) {
                 leds[1].g = readADC(GREEN_POT_MUX);
                 leds[1].b = readADC(BLUE_POT_MUX);
 
-        checkForVictory(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
+                checkForVictory(setDifficultyFromADCValue(readADC(DIFFICULTY_POT_MUX)));
 
                 if (updateLEDstripFlag) {
                     led_strip_write(leds, LED_COUNT);
