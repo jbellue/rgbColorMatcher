@@ -34,13 +34,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
+#include "rgb_color.h"
+
 #define LED_STRIP_PORT PORTB
 #define LED_STRIP_DDR  DDRB
 #define LED_STRIP_PIN  0
-
-typedef struct rgb_color {
-    uint8_t r, g, b;
-} rgb_color;
 
 void led_strip_write(rgb_color * colors, uint16_t count) __attribute__((noinline));
 
