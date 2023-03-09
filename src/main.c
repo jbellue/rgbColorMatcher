@@ -17,10 +17,6 @@
  *          Blue pot - ADC2  3 ─┤       ├─ 6  PB1 - Software reset
  *                      GND  4 ─┤       ├─ 5  PB0 - WS2812b
  *                              └───────┘
- *
- * TODO:
- *  - Tweak code for RSTDSBL
- *  - Tweak difficulty
  */
 
 #include <avr/io.h>

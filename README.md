@@ -31,3 +31,5 @@ You can tweak the difficulty with a fourth potentiometer.
 
 - Tweak code for RSTDSBL
 - Tweak difficulty
+- Tweak timings (e.g. short press duration)
+- Prevent randomly chosen color from directly matching
