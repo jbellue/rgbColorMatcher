@@ -253,7 +253,6 @@ int main(void) {
             }
             else
             {
-                PORTB &= ~(1 << PB1); // Pin 0 OFF
                 leds[0] = (rgb_color) { .r = 0, .g = 0, .b = 0 };
                 leds[1] = (rgb_color) { .r = 0, .g = 0, .b = 0 };
                 led_strip_write(leds, LED_COUNT);
