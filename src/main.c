@@ -50,7 +50,6 @@ rgb_color leds[LED_COUNT];
 volatile uint16_t timer;        // milliseconds counter
 
 static volatile uint8_t updateLEDstripFlag = 0;
-static volatile uint8_t restartFromScratchFlag = 0;
 
 typedef enum {
     POWER_OFF,
