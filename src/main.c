@@ -278,5 +278,3 @@ ISR(TIMER0_COMPA_vect) {
     updateLEDstripFlag = 1;
     timer++;
 }
-
-EMPTY_INTERRUPT(INT0_vect);
