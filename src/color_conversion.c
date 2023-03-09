@@ -14,35 +14,18 @@ typedef struct XYZ {
 XYZ rgbToXYZ(const rgb_color c);
 CIELab xyzToCIELab(const XYZ color);
 
+float xyzChannelConversion(const int value) {
+    const float ret = (float)value / 255;
+    if ( ret > 0.04045 ) {
+        return pow(( ret + 0.055 ) / 1.055, 2.4) * 100;
+    }
+    return ret / 0.1292;
+}
+
 XYZ rgbToXYZ(const rgb_color c) {
-    float var_R = (float)c.r / 255;
-    float var_G = (float)c.g / 255;
-    float var_B = (float)c.b / 255;
-
-    if ( var_R > 0.04045 ) {
-        var_R = pow(( var_R + 0.055 ) / 1.055, 2.4);
-    }
-    else {
-        var_R = var_R / 12.92;
-    }
-
-    if ( var_G > 0.04045 ) {
-        var_G = pow(( var_G + 0.055 ) / 1.055, 2.4);
-    }
-    else {
-        var_G = var_G / 12.92;
-    }
-
-    if ( var_B > 0.04045 ) {
-        var_B = pow(( var_B + 0.055 ) / 1.055, 2.4);
-    }
-    else {
-        var_B = var_B / 12.92;
-    }
-
-    var_R = var_R * 100;
-    var_G = var_G * 100;
-    var_B = var_B * 100;
+    const float var_R = xyzChannelConversion(c.r);
+    const float var_G = xyzChannelConversion(c.g);
+    const float var_B = xyzChannelConversion(c.b);
 
     const float X = var_R * 0.4124 + var_G * 0.3576 + var_B * 0.1805;
     const float Y = var_R * 0.2126 + var_G * 0.7152 + var_B * 0.0722;
@@ -50,31 +33,17 @@ XYZ rgbToXYZ(const rgb_color c) {
     return (XYZ){X, Y, Z};
 }
 
+float CIELabChannelConversion(const float value) {
+    if (value > 0.008856) {
+        return pow(value, (float)1/3 );
+    }
+    return ( 7.787 * value ) + ( (float)16/116 );
+}
+
 CIELab xyzToCIELab(const XYZ color) {
-    float var_X = (float)color.X / 95.047;
-    float var_Y = (float)color.Y / 100;
-    float var_Z = (float)color.Z / 108.883;
-
-    if (var_X > 0.008856) {
-        var_X = pow(var_X, (float)1/3 );
-    }
-    else {
-        var_X = ( 7.787 * var_X ) + ( (float)16/116 );
-    }
-
-    if (var_Y > 0.008856) {
-        var_Y = pow(var_Y, (float)1/3 );
-    }
-    else {
-        var_Y = ( 7.787 * var_Y ) + ( (float)16/116 );
-    }
-
-    if (var_Z > 0.008856) {
-        var_Z = pow(var_Z, (float)1/3 );
-    }
-    else {
-        var_Z = ( 7.787 * var_Z ) + ( (float)16/116 );
-    }
+    const float var_X = CIELabChannelConversion((float)color.X / 95.047 );
+    const float var_Y = CIELabChannelConversion((float)color.Y / 100    );
+    const float var_Z = CIELabChannelConversion((float)color.Z / 108.883);
 
     const float CIEL = ( 116 * var_Y ) - 16;
     const float CIEa = 500 * ( var_X - var_Y );
