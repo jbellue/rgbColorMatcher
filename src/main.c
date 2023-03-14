@@ -38,8 +38,8 @@
 #define BLUE_POT_MUX        0b00000010
 #define RED_POT_MUX         0b00000011
 
-#define MIN_DIFFICULTY  20
-#define MAX_DIFFICULTY  2
+#define MIN_DIFFICULTY  35
+#define MAX_DIFFICULTY  5
 #define LED_COUNT 2
 rgb_color leds[LED_COUNT];
 
